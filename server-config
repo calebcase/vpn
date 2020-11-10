@@ -1,0 +1,25 @@
+#!/bin/bash
+set -euo pipefail
+
+clients=${1?Please provide directory for client configurations.}
+server=${2?Please provide directory for server configuration.}
+
+cat <<EOF
+[Interface]
+Address = $(<"$server/private.ip")/24
+PrivateKey = $(<"$server/key")
+ListenPort = 51820
+
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+EOF
+
+for client in $clients/*; do
+  cat <<EOF
+
+# $client
+[Peer]
+PublicKey = $(wg pubkey < "$client/key")
+AllowedIPs = $(<"$client/ip")/32
+EOF
+done
