@@ -44,7 +44,6 @@ server:
   verbosity: 1
 
   root-hints: "/var/lib/unbound/root.hints"
-  auto-trust-anchor-file: "/var/lib/unbound/root.key"
 
   interface: 0.0.0.0
   max-udp-size: 3072
@@ -71,8 +70,12 @@ server:
   cache-max-ttl: 14400
   prefetch: yes
   prefetch-key: yes
-EOF
 
+  include: "/etc/unbound/unbound.conf.d/*.conf"
+EOF
+GEN
+
+cat <<'GEN'
 systemctl disable systemd-resolved.service
 systemctl stop systemd-resolved.service
 
@@ -86,4 +89,27 @@ systemctl start unbound
 
 # Needed to get it to bind the interfaces correctly apparently.
 systemctl restart unbound
+
+# Blacklist Setup
+# https://github.com/StevenBlack/hosts/blob/master/readme.md
+# https://deadc0de.re/articles/unbound-blocking-ads.html
+
+cat > /usr/bin/unbound-rebuild-blacklist <<'EOF'
+#!/bin/bash
+set -euo pipefail
+
+wget -O - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts \
+  | grep '^0\.0\.0\.0' \
+  | awk '{print "local-zone: \""$2"\" redirect\nlocal-data: \""$2" A 0.0.0.0\""}' \
+  > /tmp/blacklist.conf
+
+mv /tmp/blacklist.conf /etc/unbound/unbound.conf.d/blacklist.conf
+
+systemctl restart unbound
+EOF
+
+chmod u+x /usr/bin/unbound-rebuild-blacklist
+
+ln -s /usr/bin/unbound-rebuild-blacklist /etc/cron.daily/
+unbound-rebuild-blacklist
 GEN
