@@ -64,6 +64,12 @@ mv client.d/example client.d/computer
 
 Avoid overlapping IPs when updating the `client.d/computer/ip` file.
 
+Generate a new key for the client:
+
+```
+wg genkey > client.d/computer/key
+```
+
 Generate client config information and QR:
 
 ```
