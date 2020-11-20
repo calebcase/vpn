@@ -1,12 +1,34 @@
-#!/bin/bash
-set -euo pipefail
+terraform {
+  required_version = ">= 0.13.0"
+  required_providers {
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = "2.2.0"
+    }
+  }
+}
 
-clients=${1?Please provide directory for client configurations.}
-server=${2?Please provide directory for server configuration.}
+resource "digitalocean_floating_ip" "vpn" {
+  region = var.region
+}
 
-ip=$(<"$server/private.ip")
+resource "digitalocean_floating_ip_assignment" "vpn" {
+  ip_address = digitalocean_floating_ip.vpn.ip_address
+  droplet_id = digitalocean_droplet.vpn.id
+}
 
-cat <<GEN
+resource "digitalocean_ssh_key" "default" {
+  name       = "My SSH key"
+  public_key = file(var.ssh-key-location)
+}
+
+resource "digitalocean_droplet" "vpn" {
+  name      = "my-vpn"
+  size      = var.instance-size
+  image     = var.image
+  region    = var.region
+  ssh_keys  = [digitalocean_ssh_key.default.fingerprint]
+  user_data = <<EOT
 #!/bin/bash
 set -euo pipefail
 set -x
@@ -28,7 +50,18 @@ sysctl -p
 
 mkdir -p /etc/wireguard
 cat >> /etc/wireguard/wg0.conf <<EOF
-$(./server-config "$clients" "$server")
+[Interface]
+Address = ${var.server-private-ip}/24
+PrivateKey = ${var.server-key}
+ListenPort = 51820
+
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+# only one client for now
+[Peer]
+PublicKey = ${var.client-public-key}
+AllowedIPs = ${var.client-private-ip}/32
 EOF
 
 wg-quick up wg0
@@ -50,9 +83,9 @@ server:
 
   access-control: 0.0.0.0/0 refuse
   access-control: 127.0.0.1 allow
-  access-control: $ip/24 allow
+  access-control: ${digitalocean_floating_ip.vpn.ip_address}/24 allow
 
-  private-address: $ip/24
+  private-address: ${digitalocean_floating_ip.vpn.ip_address}/24
 
   hide-identity: yes
   hide-version: yes
@@ -113,3 +146,6 @@ chmod u+x /usr/bin/unbound-rebuild-blacklist
 ln -s /usr/bin/unbound-rebuild-blacklist /etc/cron.daily/
 unbound-rebuild-blacklist
 GEN
+EOT
+}
+

@@ -12,89 +12,40 @@ found useful for setting up VPNs in different regions. My goals were:
 The following CLI tools are required:
 
 * bash
-* doctl
 * wg
-* jq
-* qrencode
+* terraform
 
 ## Setup
+See `variables.tf` for full configuration options. Sane defaults are provided where applicable but Wireguard keys need to be created for the server and client via `wg genkey`. Corresponding public keys also must be generated via `wg pubkey < {private_key_file}`.
 
-Copy the examples and modify them:
-
+The recommended way to setup the project is to store these values in `my.tfvars` in the root of the directory like so:
 ```
-$ cp -R server.d.example server.d
-$ cp -R client.d.example client.d
-```
-
-Create a new server config by renaming the example:
-
-```
-mv server.d/example server.d/nyc
+client-key = "client-private-key"
+client-public-key = "client-public-key"
+server-key        = "server-private-key"
+server-public-key = "server-public-key"
 ```
 
-Generate a new key for the server:
+These variables can also be set via environment variables or on the CLI as described [here](https://www.terraform.io/docs/configuration/variables.html).
 
+After this a simple `make apply` will create all the resources necessary to create your VPN. This will output a client config that looks something like this:
 ```
-wg genkey > server.d/nyc/key
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+client-config =
+[Interface]
+Address = 10.10.10.2/24
+PrivateKey = <some key>
+DNS = 10.10.10.1
+
+[Peer]
+PublicKey = <some key>
+AllowedIPs = 0.0.0.0/0, ::/0
+Endpoint = 45.55.121.157:51820
 ```
+which can then be used with Wireguard. Congratulations!
 
-Update the server with a static public IP. This needs to be a public IP you
-have created in Digital Ocean already:
-
-```
-echo '1.2.3.4' > server.d/nyc/public.ip
-```
-
-Update the server with your SSH key fingerprint. This should already be
-registered with Digital Ocean.
-
-```
-echo 'yo:ur:ke:y :he:re' > server.d/nyc/ssh-keys
-```
-
-When setting the private IPs it is important that the clients and the server
-are in the same subnet. The defaults should be fine, but remember this if you
-change the server private IP or if you have a lot of clients.
-
-Create a new client config by renaming the example:
-
-```
-mv client.d/example client.d/computer
-```
-
-Avoid overlapping IPs when updating the `client.d/computer/ip` file.
-
-Generate a new key for the client:
-
-```
-wg genkey > client.d/computer/key
-```
-
-Generate client config information and QR:
-
-```
-./client-config client.d/computer server.d/nyc
-```
-
-Build the server:
-
-```
-./build server.d/nyc
-```
-
-The server can be rebuilt at any time with the above command and will get a new
-public IP.
-
-## Debugging
-
-Validate server config with:
-
-```
-./server-config client.d server.d/nyc
-```
-
-Check the server setup script:
-
-```
-./user-data client.d server.d/nyc
-```
+## Destroy
+`make destroy` will destroy all relevant resources.
