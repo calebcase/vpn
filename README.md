@@ -20,8 +20,8 @@ See `variables.tf` for full configuration options. Sane defaults are provided wh
 
 The recommended way to setup the project is to store these values in `my.tfvars` in the root of the directory like so:
 ```
-client-key = "client-private-key"
-client-public-key = "client-public-key"
+client-keys = ["client-private-key1", "client-private-key2"]
+client-public-keys = ["client-public-key1", "client-public-key2"]
 server-key        = "server-private-key"
 server-public-key = "server-public-key"
 ```

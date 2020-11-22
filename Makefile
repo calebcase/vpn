@@ -5,6 +5,8 @@ init:
 .PHONY: fmt
 fmt:
 	@terraform fmt
+	@cd examples/digitalocean-vpn && terraform fmt
+	@cd modules/digitalocean-vpn && terraform fmt
 
 .PHONY: plan
 plan: init
@@ -17,6 +19,13 @@ apply: init
 .PHONY: destroy
 destroy: init
 	@terraform destroy -var-file=my.tfvars
+
+.PHONY: cp-example
+cp-example:
+	@cp examples/digitalocean-vpn/*.tf .
+
+.PHONY: run-example
+run-example: cp-example apply
 
 .PHONY: clean
 clean:

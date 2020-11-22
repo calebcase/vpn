@@ -8,19 +8,14 @@ variable "server-public-key" {
   description = "Server Key: Generate via `wg pubkey < server/key` assuming you generated a key via `wg genkey > server/key`"
 }
 
-variable "client-key" {
-  type        = string
-  description = "Client Key: Generate via `wg genkey`"
+variable "client-public-keys" {
+  type        = list(string)
+  description = "Client Keys: Generate via `wg pubkey < client/key` assuming you generated a key via `wg genkey > client/key`"
 }
 
-variable "client-public-key" {
+variable "ssh-key-fingerprint" {
   type        = string
-  description = "Client Key: Generate via `wg pubkey < client/key` assuming you generated a key via `wg genkey > client/key`"
-}
-
-variable "ssh-key-location" {
-  type    = string
-  default = "~/.ssh/id_rsa.pub"
+  description = "The fingerprint of your existing SSH key in Digital Ocean (digitalocean_ssh_key.fingerprint in Terraform). "
 }
 
 variable "server-private-ip" {
@@ -28,9 +23,9 @@ variable "server-private-ip" {
   default = "10.10.10.1"
 }
 
-variable "client-private-ip" {
-  type    = string
-  default = "10.10.10.2"
+variable "client-private-ips" {
+  type    = list(string)
+  default = ["10.10.10.2", "10.10.10.3"]
 }
 
 variable "image" {

@@ -8,12 +8,12 @@ variable "server-public-key" {
   description = "Server Key: Generate via `wg pubkey < server/key` assuming you generated a key via `wg genkey > server/key`"
 }
 
-variable "client-key" {
-  type        = string
-  description = "Client Key: Generate via `wg genkey`"
+variable "client-public-keys" {
+  type        = list(string)
+  description = "Client Keys: Generate via `wg pubkey < client/key` assuming you generated a key via `wg genkey > client/key`"
 }
 
-variable "client-public-key" {
-  type        = string
-  description = "Client Key: Generate via `wg pubkey < client/key` assuming you generated a key via `wg genkey > client/key`"
+variable "ssh-key-location" {
+  type    = string
+  default = "~/.ssh/id_rsa.pub"
 }

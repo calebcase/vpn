@@ -7,17 +7,12 @@ resource "digitalocean_floating_ip_assignment" "vpn" {
   droplet_id = digitalocean_droplet.vpn.id
 }
 
-resource "digitalocean_ssh_key" "default" {
-  name       = "My SSH key"
-  public_key = file(var.ssh-key-location)
-}
-
 resource "digitalocean_droplet" "vpn" {
   name      = "my-vpn"
   size      = var.instance-size
   image     = var.image
   region    = var.region
-  ssh_keys  = [digitalocean_ssh_key.default.fingerprint]
+  ssh_keys  = [var.ssh-key-fingerprint]
   user_data = <<EOT
 #!/bin/bash
 set -euo pipefail
@@ -48,10 +43,11 @@ ListenPort = 51820
 PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
 
-# only one client for now
+%{for i, key in var.client-public-keys}
 [Peer]
-PublicKey = ${var.client-public-key}
-AllowedIPs = ${var.client-private-ip}/32
+PublicKey = ${key}
+AllowedIPs = ${var.client-private-ips[i]}/32
+%{endfor}
 EOF
 
 wg-quick up wg0
