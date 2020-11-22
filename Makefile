@@ -2,6 +2,9 @@
 init:
 	@terraform init
 
+main.tf: config.json
+	@./config-to-tf
+
 .PHONY: fmt
 fmt:
 	@terraform fmt
@@ -9,16 +12,16 @@ fmt:
 	@cd modules/digitalocean-vpn && terraform fmt
 
 .PHONY: plan
-plan: init
-	@terraform plan -var-file=my.tfvars
+plan: main.tf init
+	@terraform plan
 
 .PHONY: apply
-apply: init
-	@terraform apply -var-file=my.tfvars
+apply: main.tf init
+	@terraform apply
 
 .PHONY: destroy
 destroy: init
-	@terraform destroy -var-file=my.tfvars
+	@terraform destroy
 
 .PHONY: cp-example
 cp-example:
