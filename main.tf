@@ -83,9 +83,9 @@ server:
 
   access-control: 0.0.0.0/0 refuse
   access-control: 127.0.0.1 allow
-  access-control: ${digitalocean_floating_ip.vpn.ip_address}/24 allow
+  access-control: ${server-private-ip}/24 allow
 
-  private-address: ${digitalocean_floating_ip.vpn.ip_address}/24
+  private-address: ${var.server-private-ip}/24
 
   hide-identity: yes
   hide-version: yes
