@@ -26,7 +26,11 @@ resource "digitalocean_ssh_key" "default" {
 }
 
 EOF
-	SSH_KEY_FINGERPRINT="digitalocean_ssh_key.default.fingerprint"
+	SSH_KEY_FINGERPRINT=digitalocean_ssh_key.default.fingerprint
+else
+	# Use quotes if a fingerprint is supplied, no quotes if a tf resource
+	# reference is used
+	SSH_KEY_FINGERPRINT=\"$SSH_KEY_FINGERPRINT\"
 fi
 
 servers=$(jq -r 'keys[]' config.json)
@@ -60,7 +64,7 @@ module "$s" {
 	client-public-keys = $client_keys
 	client-private-ips = $client_ips
 
-	ssh-key-fingerprint = "$SSH_KEY_FINGERPRINT"
+	ssh-key-fingerprint = $SSH_KEY_FINGERPRINT
 }
 
 output "$s" {

@@ -1,6 +1,12 @@
+.PHONY: all
+all: apply
+
 .PHONY: init
 init:
 	@terraform init
+
+config.json:
+	@./create-config
 
 main.tf: config.json
 	@./config-to-tf

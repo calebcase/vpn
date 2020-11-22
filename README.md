@@ -16,8 +16,14 @@ The following CLI tools are required:
 * terraform
 * jq
 
+An existing Digital Ocean account and API token is required which should be exported under the `DIGITALOCEAN_TOKEN` environment variable.
+
+## Expedited Setup
+If you want an instant VPN with a single server and client with sane default settings, simply run `make`.
+
 ## Setup
-This project generates terraform for VPN servers based on a `config.json` which looks like:
+
+This project generates terraform for VPN servers based on a `config.json` which allows you to specify multiple clients and servers. A basic functional `config.json` can be created via `make config.json` and used as a starting point. A more complicated config would look something like the below:
 
 ```json
 {
@@ -33,8 +39,8 @@ This project generates terraform for VPN servers based on a `config.json` which 
 				"private_key": "<client-key>"
 			},
 			{
-				"private_ip": "10.10.10.1",
-				"private_key": "<server-key>"
+				"private_ip": "10.10.10.3",
+				"private_key": "<client-key>"
 			}
 		]
 	},
@@ -50,7 +56,7 @@ This project generates terraform for VPN servers based on a `config.json` which 
 				"private_key": "<client-key>"
 			},
 			{
-				"private_ip": "10.10.10.1",
+				"private_ip": "10.10.10.3",
 				"private_key": "<client-key>"
 			}
 		]
