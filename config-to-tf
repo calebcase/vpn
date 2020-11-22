@@ -50,7 +50,7 @@ for s in ${servers[@]}; do
 		client_pub_keys+=($pub)
 	done <<< $client_keys
 	client_keys=$(jq -c -n --arg inarr "$client_keys" '$inarr | split("\n")')
-	client_pub_keys=$(jq -c -n --arg inarr "$client_pub_keys" '$inarr | split(" ")')
+	client_pub_keys=$(echo "${client_pub_keys[@]}" | jq -Rc '. | split(" ")' )
 	cat << EOF >> main.tf
 module "$s" {
 	source = "./modules/digitalocean-vpn"
@@ -61,7 +61,7 @@ module "$s" {
 	server-key = "$private_key"
 	server-public-key = "$pub_key"
 
-	client-public-keys = $client_keys
+	client-public-keys = $client_pub_keys
 	client-private-ips = $client_ips
 
 	ssh-key-fingerprint = $SSH_KEY_FINGERPRINT

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+set -eou pipefail
+
+config="config.json"
+if ! [ $# -eq 0 ]; then
+	config="$1"
+fi
+
+echo "Using config at $config"
+
+servers=$(jq -r 'keys[]' $config)
+for s in ${servers[@]}; do
+	echo "Generating wireguard client configs for server $s"
+	echo ""
+	pub_ip=$(terraform output $s)
+	private_ip=$(jq -r .$s.private_ip $config)
+	private_key=$(jq -r .$s.private_key $config)
+	pub_key=$(echo $private_key | wg pubkey)
+
+	num_clients=$(jq ".$s.clients | length" $config)
+	for i in $(seq $num_clients); do
+		i=$((i-1))
+		conf_path="wg-$s-$i.conf"
+		echo "Creating client config $conf_path"
+		ip=$(jq -r ".$s.clients[$i].private_ip" $config)
+		key=$(jq -r ".$s.clients[$i].private_key" $config)
+		cat << EOF > $conf_path
+[Interface]
+Address = $ip/24
+PrivateKey = $key
+DNS = $private_ip
+
+[Peer]
+PublicKey = $pub_key
+AllowedIPs = 0.0.0.0/0, ::/0
+Endpoint = $pub_ip:51820
+EOF
+	printf "The corresponding QR code is: \n"
+	qrencode -t ansiutf8 -r $conf_path
+	done
+done

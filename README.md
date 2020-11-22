@@ -15,11 +15,12 @@ The following CLI tools are required:
 * wg
 * terraform
 * jq
+* qrencode
 
 An existing Digital Ocean account and API token is required which should be exported under the `DIGITALOCEAN_TOKEN` environment variable.
 
 ## Expedited Setup
-If you want an instant VPN with a single server and client with sane default settings, simply run `make`.
+If you want an instant VPN with a single server and client with sane default settings, simply run `make` and use the generated `wg-vpn1-0.conf` wireguard config or displayed QR code.
 
 ## Setup
 
@@ -68,7 +69,8 @@ This project generates terraform for VPN servers based on a `config.json` which 
 A `main.tf` file will be generated based on this config and can be invoked from the Makefile. An existing Digital Ocean SSH key can be provided via the environment variable `SSH_KEY_FINGERPRINT`, otherwise the terraform will use one located at `~/.ssh/id_rsa.pub` instead.
 
 After this a simple `make apply` will create all the resources necessary to create your VPN.
-TODO: Add client config generation.
+
+Finally, the client configs are created via `make client-configs` that will use the newly created public IP as well as the other specified settings from `config.json`.
 
 ## Destroy
 `make destroy` will destroy all relevant resources.

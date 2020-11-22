@@ -3,3 +3,4 @@
 *.tfvars
 config.json
 main.tf
+*.conf

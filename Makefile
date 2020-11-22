@@ -1,5 +1,5 @@
 .PHONY: all
-all: apply
+all: client-configs
 
 .PHONY: init
 init:
@@ -24,6 +24,10 @@ plan: main.tf init
 .PHONY: apply
 apply: main.tf init
 	@terraform apply
+
+.PHONY: client-configs
+client-configs: apply
+	@./client-configs
 
 .PHONY: destroy
 destroy: init
