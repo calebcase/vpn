@@ -1,13 +1,3 @@
-terraform {
-  required_version = ">= 0.13.0"
-  required_providers {
-    digitalocean = {
-      source  = "digitalocean/digitalocean"
-      version = "2.2.0"
-    }
-  }
-}
-
 resource "digitalocean_floating_ip" "vpn" {
   region = var.region
 }
@@ -83,7 +73,7 @@ server:
 
   access-control: 0.0.0.0/0 refuse
   access-control: 127.0.0.1 allow
-  access-control: ${server-private-ip}/24 allow
+  access-control: ${var.server-private-ip}/24 allow
 
   private-address: ${var.server-private-ip}/24
 

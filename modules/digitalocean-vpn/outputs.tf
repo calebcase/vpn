@@ -1,6 +1,5 @@
 output "client-config" {
   value = <<EOT
-
 [Interface]
 Address = ${var.client-private-ip}/24
 PrivateKey = ${var.client-key}
