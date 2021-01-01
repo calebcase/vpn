@@ -1,0 +1,6 @@
+.terraform
+*.tfstate*
+*.tfvars
+config.json
+main.tf
+*.conf

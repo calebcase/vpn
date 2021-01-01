@@ -12,89 +12,65 @@ found useful for setting up VPNs in different regions. My goals were:
 The following CLI tools are required:
 
 * bash
-* doctl
 * wg
+* terraform
 * jq
 * qrencode
 
+An existing Digital Ocean account and API token is required which should be exported under the `DIGITALOCEAN_TOKEN` environment variable.
+
+## Expedited Setup
+If you want an instant VPN with a single server and client with sane default settings, simply run `make` and use the generated `wg-vpn1-0.conf` wireguard config or displayed QR code.
+
 ## Setup
 
-Copy the examples and modify them:
+This project generates terraform for VPN servers based on a `config.json` which allows you to specify multiple clients and servers. A basic functional `config.json` can be created via `make config.json` and used as a starting point. A more complicated config would look something like the below:
+
+```json
+{
+	"vpn1": {
+		"image": "ubuntu-20-04-x64",
+		"instance_size": "s-1vcpu-1gb",
+		"region": "nyc1",
+		"private_ip": "10.10.10.1",
+		"private_key": "<server-key>",
+		"clients": [
+			{
+				"private_ip": "10.10.10.2",
+				"private_key": "<client-key>"
+			},
+			{
+				"private_ip": "10.10.10.3",
+				"private_key": "<client-key>"
+			}
+		]
+	},
+	"vpn2": {
+		"image": "ubuntu-20-04-x64",
+		"instance_size": "s-1vcpu-1gb",
+		"region": "nyc2",
+		"private_ip": "10.10.10.5",
+		"private_key": "<server-key>",
+		"clients": [
+			{
+				"private_ip": "10.10.10.2",
+				"private_key": "<client-key>"
+			},
+			{
+				"private_ip": "10.10.10.3",
+				"private_key": "<client-key>"
+			}
+		]
+	}
+}
 
 ```
-$ cp -R server.d.example server.d
-$ cp -R client.d.example client.d
-```
 
-Create a new server config by renaming the example:
+A `main.tf` file will be generated based on this config and can be invoked from the Makefile. An existing Digital Ocean SSH key can be provided via the environment variable `SSH_KEY_FINGERPRINT`, otherwise the terraform will use one located at `~/.ssh/id_rsa.pub` instead.
 
-```
-mv server.d/example server.d/nyc
-```
+After this a simple `make apply` will create all the resources necessary to create your VPN.
 
-Generate a new key for the server:
+Finally, the client configs are created via `make client-configs` that will use the newly created public IP as well as the other specified settings from `config.json`.
 
-```
-wg genkey > server.d/nyc/key
-```
-
-Update the server with a static public IP. This needs to be a public IP you
-have created in Digital Ocean already:
-
-```
-echo '1.2.3.4' > server.d/nyc/public.ip
-```
-
-Update the server with your SSH key fingerprint. This should already be
-registered with Digital Ocean.
-
-```
-echo 'yo:ur:ke:y :he:re' > server.d/nyc/ssh-keys
-```
-
-When setting the private IPs it is important that the clients and the server
-are in the same subnet. The defaults should be fine, but remember this if you
-change the server private IP or if you have a lot of clients.
-
-Create a new client config by renaming the example:
-
-```
-mv client.d/example client.d/computer
-```
-
-Avoid overlapping IPs when updating the `client.d/computer/ip` file.
-
-Generate a new key for the client:
-
-```
-wg genkey > client.d/computer/key
-```
-
-Generate client config information and QR:
-
-```
-./client-config client.d/computer server.d/nyc
-```
-
-Build the server:
-
-```
-./build server.d/nyc
-```
-
-The server can be rebuilt at any time with the above command and will get a new
-public IP.
-
-## Debugging
-
-Validate server config with:
-
-```
-./server-config client.d server.d/nyc
-```
-
-Check the server setup script:
-
-```
-./user-data client.d server.d/nyc
-```
+## Destroy
+`make destroy` will destroy all relevant resources.

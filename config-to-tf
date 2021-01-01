@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+
+set -eou pipefail
+
+SSH_KEY_FINGERPRINT=${SSH_KEY_FINGERPRINT:-}
+
+cat << 'EOF' > main.tf
+terraform {
+  required_version = ">= 0.13"
+  required_providers {
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = "2.2.0"
+    }
+  }
+}
+
+EOF
+
+if [ -z $SSH_KEY_FINGERPRINT ]; then
+	echo "SSH_KEY_FINGERPRINT is unset, adding ssh key resources to terraform"
+	cat << 'EOF' >> main.tf
+resource "digitalocean_ssh_key" "default" {
+  name       = "My SSH key"
+  public_key = file("~/.ssh/id_rsa.pub")
+}
+
+EOF
+	SSH_KEY_FINGERPRINT=digitalocean_ssh_key.default.fingerprint
+else
+	# Use quotes if a fingerprint is supplied, no quotes if a tf resource
+	# reference is used
+	SSH_KEY_FINGERPRINT=\"$SSH_KEY_FINGERPRINT\"
+fi
+
+servers=$(jq -r 'keys[]' config.json)
+for s in ${servers[@]}; do
+	echo "Generating terraform for server ${s}"
+	image=$(jq -r .$s.image config.json)
+	instance_size=$(jq -r .$s.instance_size config.json)
+	region=$(jq -r .$s.region config.json)
+	private_ip=$(jq -r .$s.private_ip config.json)
+	private_key=$(jq -r .$s.private_key config.json)
+	pub_key=$(echo $private_key | wg pubkey)
+	client_ips=$(jq  -c "[ .$s.clients | .[].private_ip]" config.json)
+	client_keys=$(jq -r ".$s.clients | .[].private_key" config.json)
+	client_pub_keys=()
+	while read k; do
+		pub=$(echo $k | wg pubkey)
+		client_pub_keys+=($pub)
+	done <<< $client_keys
+	client_keys=$(jq -c -n --arg inarr "$client_keys" '$inarr | split("\n")')
+	client_pub_keys=$(echo "${client_pub_keys[@]}" | jq -Rc '. | split(" ")' )
+	cat << EOF >> main.tf
+module "$s" {
+	source = "./modules/digitalocean-vpn"
+	image = "$image"
+	instance-size = "$instance_size"
+	region = "$region"
+
+	server-key = "$private_key"
+	server-public-key = "$pub_key"
+
+	client-public-keys = $client_pub_keys
+	client-private-ips = $client_ips
+
+	ssh-key-fingerprint = $SSH_KEY_FINGERPRINT
+}
+
+output "$s" {
+	value = module.$s.public-ip
+}
+
+EOF
+done
+

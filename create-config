@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+set -eou pipefail
+
+echo "Generating a single server and client config (config.json)"
+server_key=$(wg genkey)
+client_key=$(wg genkey)
+
+cat << EOF |
+{
+	"vpn1": {
+		"image": "ubuntu-20-04-x64",
+		"instance_size": "s-1vcpu-1gb",
+		"region": "nyc1",
+		"private_ip": "10.10.10.1",
+		"private_key": "$server_key",
+		"clients": [
+			{
+				"private_ip": "10.10.10.2",
+				"private_key": "$client_key"
+			}
+		]
+	}
+}
+EOF
+jq . > config.json
