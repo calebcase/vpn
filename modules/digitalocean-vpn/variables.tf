@@ -125,6 +125,17 @@ server:
   prefetch-key: yes
 
   include: "/etc/unbound/unbound.conf.d/*.conf"
+
+  tls-cert-bundle: /etc/ssl/certs/ca-certificates.crt
+
+forward-zone:
+  name: "."
+  forward-tls-upstream: yes
+  forward-addr: 2606:4700:4700::1111@853#cloudflare-dns.com
+  forward-addr: 1.1.1.1@853#cloudflare-dns.com
+  forward-addr: 2606:4700:4700::1001@853#cloudflare-dns.com
+  forward-addr: 1.0.0.1@853#cloudflare-dns.com
+
 EOF
 
 systemctl disable systemd-resolved.service
